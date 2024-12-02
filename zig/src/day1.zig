@@ -38,6 +38,7 @@ pub fn main() !void {
     var similarity: i64 = 0;
     for (left_list.items, right_list.items) |left, right| {
         distance += @abs(right - left);
+
         const entry = score.get(left);
         if (entry) |num| {
             similarity += left * num;

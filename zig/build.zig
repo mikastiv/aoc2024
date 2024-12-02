@@ -5,6 +5,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const src_dir = "src";
+    const data_dir = "../data";
     var dir = try std.fs.cwd().openDir(src_dir, .{ .iterate = true });
     defer dir.close();
 
@@ -25,7 +26,7 @@ pub fn build(b: *std.Build) !void {
                     .optimize = optimize,
                 });
 
-                const input_path = b.pathJoin(&.{ "data", stem });
+                const input_path = b.pathJoin(&.{ data_dir, stem });
                 exe.root_module.addAnonymousImport("input", .{ .root_source_file = b.path(input_path) });
                 b.installArtifact(exe);
 
