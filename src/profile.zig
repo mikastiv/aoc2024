@@ -18,7 +18,7 @@ pub fn endAndPrint() !void {
     var buffered_stdout = std.io.bufferedWriter(std.io.getStdOut().writer());
     const stdout = buffered_stdout.writer();
 
-    const total_time = profiler.end - profiler.start;
+    const total_time = (profiler.end - profiler.start) * std.time.ms_per_s;
     const freq_f64: f64 = @floatFromInt(profiler.timer_freq);
     const total_f64: f64 = @floatFromInt(total_time);
     const time_ms = total_f64 / freq_f64;
