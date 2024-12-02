@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) !void {
     build_options.addOption(bool, "profile", profile);
 
     const src_dir = "src";
-    const data_dir = "../data";
+    const data_dir = "data";
     var dir = try std.fs.cwd().openDir(src_dir, .{ .iterate = true });
     defer dir.close();
 

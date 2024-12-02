@@ -23,19 +23,6 @@ fn unsafeReport(levels: []const i32) bool {
     return false;
 }
 
-fn removeElement(items: []i32, index: usize) []i32 {
-    var read_index: usize = 0;
-    var write_index: usize = 0;
-    while (read_index < items.len) : (read_index += 1) {
-        if (index != read_index) {
-            items[write_index] = items[read_index];
-            write_index += 1;
-        }
-    }
-
-    return items[0 .. items.len - 1];
-}
-
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const alloc = arena.allocator();
@@ -68,7 +55,8 @@ pub fn main() !void {
             const items = buffer[0..report.items.len];
             @memcpy(items, report.items);
 
-            const slice = removeElement(items, index);
+            std.mem.copyForwards(i32, items[index .. items.len - 1], items[index + 1 ..]);
+            const slice = items[0 .. items.len - 1];
 
             if (!unsafeReport(slice)) {
                 part2 += 1;
