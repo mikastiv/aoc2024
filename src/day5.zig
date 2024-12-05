@@ -2,8 +2,10 @@ const std = @import("std");
 const profile = @import("profile.zig");
 
 const input = @embedFile("input");
+const line_ends = if (std.mem.indexOf(u8, input, "\r\n") != null) "\r\n" else "\n";
 
 const RulesMap = std.AutoHashMap(struct { u32, u32 }, void);
+const UpdateList = std.ArrayList(std.ArrayList(u32));
 
 fn lessThan(ctx: *const RulesMap, a: u32, b: u32) bool {
     const pair1 = .{ a, b };
@@ -15,21 +17,10 @@ fn lessThan(ctx: *const RulesMap, a: u32, b: u32) bool {
     return entry1 != null and entry2 == null;
 }
 
-pub fn main() !void {
-    profile.begin(.Rdtsc);
-
-    const line_ends = comptime if (std.mem.indexOf(u8, input, "\r\n") != null) "\r\n" else "\n";
-
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const alloc = arena.allocator();
-
-    var parts = std.mem.tokenizeSequence(u8, input, line_ends ++ line_ends);
-    const rules_input = parts.next().?;
-    const updates_input = parts.next().?;
-
+fn parseRules(alloc: std.mem.Allocator, lines: []const u8) !RulesMap {
     var rules = RulesMap.init(alloc);
 
-    var rule_lines = std.mem.tokenizeSequence(u8, rules_input, line_ends);
+    var rule_lines = std.mem.tokenizeSequence(u8, lines, line_ends);
     while (rule_lines.next()) |line| {
         const slice1 = std.mem.sliceTo(line, '|');
         const slice2 = line[slice1.len + 1 ..];
@@ -40,9 +31,13 @@ pub fn main() !void {
         try rules.putNoClobber(.{ page1, page2 }, {});
     }
 
-    var updates = std.ArrayList(std.ArrayList(u32)).init(alloc);
+    return rules;
+}
 
-    var update_lines = std.mem.tokenizeSequence(u8, updates_input, line_ends);
+fn parseUpdates(alloc: std.mem.Allocator, lines: []const u8) !UpdateList {
+    var updates = UpdateList.init(alloc);
+
+    var update_lines = std.mem.tokenizeSequence(u8, lines, line_ends);
     while (update_lines.next()) |line| {
         var items = std.mem.tokenizeScalar(u8, line, ',');
 
@@ -54,6 +49,20 @@ pub fn main() !void {
 
         try updates.append(list);
     }
+
+    return updates;
+}
+
+pub fn main() !void {
+    profile.begin(.Rdtsc);
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const alloc = arena.allocator();
+
+    var parts = std.mem.tokenizeSequence(u8, input, line_ends ++ line_ends);
+
+    const rules = try parseRules(alloc, parts.next().?);
+    const updates = try parseUpdates(alloc, parts.next().?);
 
     var part1: u32 = 0;
     var part2: u32 = 0;
