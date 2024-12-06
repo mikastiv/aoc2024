@@ -4,11 +4,6 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const profile = b.option(bool, "profile", "Enables the profiler") orelse false;
-
-    const build_options = b.addOptions();
-    build_options.addOption(bool, "profile", profile);
-
     const src_dir = "src";
     const data_dir = "data";
     var dir = try std.fs.cwd().openDir(src_dir, .{ .iterate = true });
@@ -33,7 +28,6 @@ pub fn build(b: *std.Build) !void {
 
                 const input_path = b.pathJoin(&.{ data_dir, stem });
                 exe.root_module.addAnonymousImport("input", .{ .root_source_file = b.path(input_path) });
-                exe.root_module.addOptions("build_options", build_options);
                 b.installArtifact(exe);
 
                 const run_cmd = b.addRunArtifact(exe);
