@@ -1,5 +1,4 @@
 const std = @import("std");
-const profile = @import("profile.zig");
 
 const input = @embedFile("input");
 
@@ -24,8 +23,6 @@ fn unsafeReport(levels: []const i32) bool {
 }
 
 pub fn main() !void {
-    profile.begin(.Rdtsc);
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const alloc = arena.allocator();
 
@@ -71,6 +68,4 @@ pub fn main() !void {
 
     std.debug.print("part1: {d}\n", .{part1});
     std.debug.print("part2: {d}\n", .{part2});
-
-    try profile.endAndPrint();
 }

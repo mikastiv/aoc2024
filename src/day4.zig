@@ -1,5 +1,4 @@
 const std = @import("std");
-const profile = @import("profile.zig");
 
 const input = @embedFile("input");
 
@@ -33,8 +32,6 @@ fn diagLeft(grid: []const []const u8, x: usize, y: usize, comptime word: []const
 }
 
 pub fn main() !void {
-    profile.begin(.Rdtsc);
-
     const row_count = std.mem.count(u8, input, "\n");
 
     var grid = try std.heap.page_allocator.alloc([]const u8, row_count);
@@ -71,6 +68,4 @@ pub fn main() !void {
 
     std.debug.print("part1: {d}\n", .{part1});
     std.debug.print("part2: {d}\n", .{part2});
-
-    try profile.endAndPrint();
 }

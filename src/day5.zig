@@ -1,5 +1,4 @@
 const std = @import("std");
-const profile = @import("profile.zig");
 
 const input = @embedFile("input");
 const line_ends = if (std.mem.indexOf(u8, input, "\r\n") != null) "\r\n" else "\n";
@@ -54,8 +53,6 @@ fn parseUpdates(alloc: std.mem.Allocator, lines: []const u8) !UpdateList {
 }
 
 pub fn main() !void {
-    profile.begin(.Rdtsc);
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const alloc = arena.allocator();
 
@@ -81,6 +78,4 @@ pub fn main() !void {
 
     std.debug.print("part1: {d}\n", .{part1});
     std.debug.print("part2: {d}\n", .{part2});
-
-    try profile.endAndPrint();
 }

@@ -1,11 +1,8 @@
 const std = @import("std");
-const profile = @import("profile.zig");
 
 const input = @embedFile("input");
 
 pub fn main() !void {
-    profile.begin(.Rdtsc);
-
     const mul = "mul(";
     const do = "do()";
     const dont = "don't()";
@@ -43,6 +40,4 @@ pub fn main() !void {
 
     std.debug.print("part1: {d}\n", .{part1});
     std.debug.print("part2: {d}\n", .{part2});
-
-    try profile.endAndPrint();
 }
