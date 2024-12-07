@@ -2,76 +2,28 @@ const std = @import("std");
 
 const input = @embedFile("input");
 
-const Equation = struct {
-    result: u64,
-    values: []u64,
-};
+fn equationPossible(result: u64, values: []const u64, comptime use_concat: bool) bool {
+    if (values.len == 1)
+        return result == values[0];
 
-const Operation = enum {
-    add,
-    mul,
-    concat,
+    const last = values[values.len - 1];
+    const next_values = values[0 .. values.len - 1];
 
-    fn apply(self: Operation, a: u64, b: u64) u64 {
-        return switch (self) {
-            .add => a + b,
-            .mul => a * b,
-            .concat => blk: {
-                var digits: u64 = 1;
-                var copy = b;
-                while (copy / 10 > 0) : (digits += 1) {
-                    copy /= 10;
-                }
+    if (result > last and equationPossible(result - last, next_values, use_concat))
+        return true;
 
-                break :blk a * std.math.pow(u64, 10, digits) + b;
-            },
-        };
-    }
-};
+    if (result % last == 0 and equationPossible(result / last, next_values, use_concat))
+        return true;
 
-fn cartesianProduct(
-    alloc: std.mem.Allocator,
-    comptime array: []const Operation,
-    repeat: usize,
-) !std.ArrayList([]Operation) {
-    const indices = try alloc.alloc(usize, repeat);
-    @memset(indices, 0);
-
-    var result = std.ArrayList([]Operation).init(alloc);
-
-    const total = std.math.pow(usize, array.len, repeat);
-    for (0..total) |_| {
-        var combination = try std.ArrayList(Operation).initCapacity(alloc, repeat);
-        for (0..repeat) |i| {
-            try combination.append(array[indices[i]]);
-        }
-
-        try result.append(combination.items);
-
-        var i: usize = repeat;
-        while (i > 0) : (i -= 1) {
-            const index = i - 1;
-
-            indices[index] += 1;
-            if (indices[index] < array.len)
-                break;
-
-            indices[index] = 0;
-        }
-    }
-
-    return result;
-}
-
-fn equationPossible(combinations: []const []const Operation, equation: Equation) bool {
-    for (combinations) |combination| {
-        var result = equation.values[0];
-        for (equation.values[1..], 0..) |value, index| {
-            result = combination[index].apply(result, value);
-        }
-
-        if (result == equation.result) {
-            return true;
+    if (use_concat) {
+        var buf_a: [32]u8 = undefined;
+        var buf_b: [32]u8 = undefined;
+        const slice_a = std.fmt.bufPrintIntToSlice(&buf_a, result, 10, .lower, .{});
+        const slice_b = std.fmt.bufPrintIntToSlice(&buf_b, last, 10, .lower, .{});
+        if (slice_a.len > slice_b.len and std.mem.endsWith(u8, slice_a, slice_b)) {
+            const new_result = std.fmt.parseInt(u64, slice_a[0 .. slice_a.len - slice_b.len], 10) catch unreachable;
+            if (equationPossible(new_result, next_values, use_concat))
+                return true;
         }
     }
 
@@ -79,44 +31,24 @@ fn equationPossible(combinations: []const []const Operation, equation: Equation)
 }
 
 pub fn main() !void {
-    const row_count = std.mem.count(u8, input, "\n");
-
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const alloc = arena.allocator();
-
-    var equations = try std.ArrayList(Equation).initCapacity(alloc, row_count);
-
+    var part1: u64 = 0;
+    var part2: u64 = 0;
+    var values = try std.BoundedArray(u64, 32).init(0);
     var lines = std.mem.tokenizeScalar(u8, input, '\n');
     while (lines.next()) |line| {
-        const result = std.mem.sliceTo(line, ':');
-        var values = std.ArrayList(u64).init(alloc);
-        var it = std.mem.tokenizeAny(u8, line[result.len + 1 ..], &std.ascii.whitespace);
+        values.clear();
+
+        const result_slice = std.mem.sliceTo(line, ':');
+        const result = try std.fmt.parseInt(u64, result_slice, 10);
+
+        var it = std.mem.tokenizeAny(u8, line[result_slice.len + 1 ..], &std.ascii.whitespace);
         while (it.next()) |item| {
             const num = try std.fmt.parseInt(u64, item, 10);
             try values.append(num);
         }
 
-        try equations.append(.{
-            .result = try std.fmt.parseInt(u64, result, 10),
-            .values = values.items,
-        });
-    }
-
-    var part1: u64 = 0;
-    var part2: u64 = 0;
-    for (equations.items) |equation| {
-        {
-            const combinations = try cartesianProduct(alloc, &.{ .add, .mul }, equation.values.len - 1);
-            if (equationPossible(combinations.items, equation)) {
-                part1 += equation.result;
-            }
-        }
-        {
-            const combinations = try cartesianProduct(alloc, &.{ .add, .mul, .concat }, equation.values.len - 1);
-            if (equationPossible(combinations.items, equation)) {
-                part2 += equation.result;
-            }
-        }
+        if (equationPossible(result, values.constSlice(), false)) part1 += result;
+        if (equationPossible(result, values.constSlice(), true)) part2 += result;
     }
 
     std.debug.print("part1: {d}\n", .{part1});
