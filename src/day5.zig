@@ -33,47 +33,37 @@ fn parseRules(alloc: std.mem.Allocator, lines: []const u8) !RulesMap {
     return rules;
 }
 
-fn parseUpdates(alloc: std.mem.Allocator, lines: []const u8) !UpdateList {
-    var updates = UpdateList.init(alloc);
-
-    var update_lines = std.mem.tokenizeSequence(u8, lines, line_ends);
-    while (update_lines.next()) |line| {
-        var items = std.mem.tokenizeScalar(u8, line, ',');
-
-        var list = std.ArrayList(u32).init(alloc);
-        while (items.next()) |item| {
-            const num = try std.fmt.parseInt(u32, item, 10);
-            try list.append(num);
-        }
-
-        try updates.append(list);
-    }
-
-    return updates;
-}
-
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const alloc = arena.allocator();
 
     var parts = std.mem.tokenizeSequence(u8, input, line_ends ++ line_ends);
-
     const rules = try parseRules(alloc, parts.next().?);
-    const updates = try parseUpdates(alloc, parts.next().?);
 
     var part1: u32 = 0;
     var part2: u32 = 0;
-    for (updates.items) |update| {
-        var ptr: *u32 = undefined;
-        if (std.sort.isSorted(u32, update.items, &rules, lessThan)) {
-            ptr = &part1;
-        } else {
-            std.sort.insertion(u32, update.items, &rules, lessThan);
-            ptr = &part2;
+    var updates = try std.BoundedArray(u32, 32).init(0);
+    var update_lines = std.mem.tokenizeSequence(u8, parts.next().?, line_ends);
+    while (update_lines.next()) |line| {
+        updates.clear();
+
+        var items = std.mem.tokenizeScalar(u8, line, ',');
+        while (items.next()) |item| {
+            const num = try std.fmt.parseInt(u32, item, 10);
+            try updates.append(num);
         }
 
-        const middle = update.items.len / 2;
-        ptr.* += update.items[middle];
+        const part: *u32 = blk: {
+            if (std.sort.isSorted(u32, updates.constSlice(), &rules, lessThan)) {
+                break :blk &part1;
+            } else {
+                std.sort.insertion(u32, updates.slice(), &rules, lessThan);
+                break :blk &part2;
+            }
+        };
+
+        const middle = updates.constSlice().len / 2;
+        part.* += updates.constSlice()[middle];
     }
 
     std.debug.print("part1: {d}\n", .{part1});
